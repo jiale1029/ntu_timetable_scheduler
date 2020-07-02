@@ -10,6 +10,11 @@ autopep8 = "*"
 fastapi = "*"
 uvicorn = "*"
 requests = "*"
+pandas = "*"
+lxml = "*"
+typing = "*"
+html5lib = "*"
+bs4 = "*"
 
 [requires]
 python_version = "3.7"

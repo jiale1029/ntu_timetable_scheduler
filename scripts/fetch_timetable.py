@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 current_timestamp = str(dt.now())
 
 try:
-    logger.info("Fetching the timetable from NTU's public server...")
+    logger.info("Fetching the class timetable from NTU's public server...")
     request_data = dict()
     request_data["r_search_type"] = "F"
     request_data["boption"] = "Search"
@@ -33,7 +33,7 @@ try:
         url=CLASS_SCHEDULE_URL,
         data=request_data
     )
-    with open(os.path.join(timetable_dir, "class", current_timestamp+"_class_timetable.html"), "w") as f:
+    with open(os.path.join(timetable_dir, "class", current_timestamp + "_class_timetable.html"), "w") as f:
         f.write(resp.text)
 except requests.RequestException as e:
     logger.critical(f"Failed to fetch timetable: {e}")
@@ -50,7 +50,8 @@ try:
     request_data["p_dept"] = ""
     request_data["p_subj"] = ""
     request_data["p_venue"] = ""
-    request_data["p_plan_no"] = "0"
+    request_data["p_matric"] = ""
+    request_data["p_plan_no"] = "103"
     request_data["p_exam_yr"] = "2020"
     request_data["p_semester"] = "1"
     request_data["p_type"] = "UE"
@@ -60,9 +61,8 @@ try:
         url=EXAM_SCHEDULE_URL,
         data=request_data
     )
-    print(resp.text)
-    #with open(os.path.join(timetable_dir, "exam", current_timestamp+"_exam_timetable.html"), "w") as f:
-    #    f.write(resp.text)
+    with open(os.path.join(timetable_dir, "exam", current_timestamp+"_exam_timetable.html"), "w") as f:
+        f.write(resp.text)
 except requests.RequestException as e:
     logger.critical(f"Failed to fetch timetable: {e}")
     raise
