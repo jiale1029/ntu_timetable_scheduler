@@ -66,6 +66,7 @@ def parse_index(indexes: List) -> List[Dict]:
             for idx, content in enumerate(ci.split("\n")[2:-1]):
                 content = content.replace(
                     "<td><b>", "").replace("</b></td>", "")
+                content = content.replace("&nbsp;", "").replace("<td></td>", "")
                 if idx == 0 and content == "":  # If no index, group with previous index
                     parse_indexes[-1]["Info"].append({})
                     continue
@@ -118,24 +119,25 @@ for idx, course in enumerate(courses):
     course_index_mapping[course_code]["Indexes"] = parse_index(index_contents)
     course_index_mapping[course_code]["AU"] = cleaned_course_aus[idx]
 
-with open(os.path.join(timetable_dir, "latest_class_timetable.json"), "w") as file:
-    file.write(json.dumps(course_index_mapping))
+#with open(os.path.join(timetable_dir, "latest_class_timetable.json"), "w") as file:
+#    file.write(json.dumps(course_index_mapping))
 
 with open(os.path.join(exam_timetable_dir, latest_exam_timetable), "r") as f:
     content = f.read()
     contents = re.split('<BR>\n<BR>\n<BR>\n', content)
     dfs = pd.read_html(contents[1])
     df = dfs[0]
-    exam_course_mapping = []
+    exam_course_mapping = dict()
     for idx in range(len(df)):
-        exam_course_mapping.append({})
-        exam_course_mapping[-1]["Date"] = df[0][idx]
-        exam_course_mapping[-1]["Day"] = df[1][idx]
-        exam_course_mapping[-1]["Time"] = df[2][idx]
-        exam_course_mapping[-1]["Code"] = df[3][idx]
-        exam_course_mapping[-1]["Title"] = df[4][idx]
-        exam_course_mapping[-1]["Duration"] = df[5][idx]
-    exam_course_mapping = exam_course_mapping[1:-1]
+        code = df[3][idx]
+        if code not in course_index_mapping:
+            continue
+        exam_course_mapping[code] = dict()
+        exam_course_mapping[code]["Date"] = df[0][idx]
+        exam_course_mapping[code]["Day"] = df[1][idx]
+        exam_course_mapping[code]["Time"] = df[2][idx]
+        exam_course_mapping[code]["Title"] = df[4][idx]
+        exam_course_mapping[code]["Duration"] = df[5][idx]
 
 with open(os.path.join(timetable_dir, "latest_exam_timetable.json"), "w") as f:
     f.write(json.dumps(exam_course_mapping))
@@ -144,6 +146,7 @@ print("Parsing Results")
 print("================================")
 print(f"Module Count : {len(course_codes)}")
 print(f"Title Count  : {len(course_titles)}")
+print(f"Exam Count   : {len(exam_course_mapping)}")
 print(f"Remark Count : {len(course_remarks)}")
 print(f"AU Count     : {len(course_aus)}")
 print(f"Time taken   : {time.time()-start}")
