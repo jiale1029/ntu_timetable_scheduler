@@ -2,8 +2,10 @@ import os
 import logging
 import json
 import numpy as np
+from copy import deepcopy
 from datetime import datetime, timedelta
 from typing import List, Dict, Tuple
+from pprint import pprint
 
 from scheduler.backend.constants import TIME_MAPPING, DAY_MAPPING
 
@@ -19,9 +21,6 @@ logger = logging.getLogger(__file__)
 
 
 class TimetableService:
-
-    class_timetable_matrix = np.zeros((32, 6), dtype=int)
-
     def __init__(self):
         self.class_timetables, self.exam_timetables = self.load_timetable()
 
@@ -70,7 +69,18 @@ class TimetableService:
         return DAY_MAPPING[day]
 
     def parse_remark(self, remarks: str) -> str:
-        return remarks
+        """
+        Convert remarks to weeks
+        """
+        if "-" in remarks:
+            # range
+            week_range = remarks.split("Wk")[1].split("-")
+            splitted_weeks = [j for j in range(int(week_range[0]), int(week_range[-1])+1, 1)]
+        elif "," in remarks:
+            splitted_weeks = remarks.split("Wk")[1].split(",")
+            splitted_weeks = [int(j) for j in splitted_weeks]
+
+        return splitted_weeks
 
     def parse_day_time(self, time_range: str, day: str) -> List[Tuple[int]]:
         times: List[int] = self.parse_time(time_range)
@@ -96,6 +106,20 @@ class TimetableService:
         minutes = hour * 60 + minute
         return minutes
 
+    def add_index(self, class_timetable_matrix, index_infos: Dict):
+        for index_info in index_infos:
+            coordinates = self.parse_day_time(index_info["Time"], index_info["Day"])
+            for coord in coordinates:
+                class_timetable_matrix[coord] += 1
+        return class_timetable_matrix
+
+    def remove_index(self, class_timetable_matrix, index_infos: Dict):
+        for index_info in index_infos:
+            coordinates = self.parse_day_time(index_info["Time"], index_info["Day"])
+            for coord in coordinates:
+                class_timetable_matrix[coord] -= 1
+        return class_timetable_matrix
+
     def generate_class_timetable(self, course_codes: List) -> List[Dict]:
         """
         Use the course codes to retrieve all the possible indexes,
@@ -103,13 +127,73 @@ class TimetableService:
         During the generation process, check if there's a clash
         in the newly added index, if there is one, stop and try next.
         """
-        course_added = []
-        for course_code in course_codes:
-            course = self.class_timetables[course_code]
-            for indexes in course["Indexes"]:
-                pass
+        count: int = len(course_codes)
+        dup_course_codes = deepcopy(course_codes)
+        course_added: Dict = {}
+        class_timetable_matrix = np.zeros((32, 6), dtype=int)
+        course_stack = {cc: self.class_timetables[cc]["Indexes"] for cc in course_codes}
+        res: List[Dict] = []
 
-        return None
+        def generate_solution(
+            course_codes: List, class_timetable_matrix,
+            solutions: List[Dict], solution: Dict
+        ) -> List[Dict]:
+
+            if len(course_codes) == 0:
+                # return dictionary that contains a single possibility
+                if len(solution) == count:
+                    print(class_timetable_matrix)
+                    solutions.append(deepcopy(solution))
+                    print("Inside solutions: ", solutions)
+                return solution
+            else:
+                course_code = course_codes.pop()
+                indexes: List[Dict] = self.class_timetables[course_code]["Indexes"]
+
+                for index_info in indexes:
+                    if self.check_class_clash(
+                        self.add_index(class_timetable_matrix, index_info["Info"])
+                    ):
+                        # if clash, try the next index
+                        print(f"Clash for: {index_info['Index']}")
+                        self.remove_index(class_timetable_matrix, index_info["Info"])
+                        continue
+                    index_num = index_info["Index"]
+                    print(course_code, ":", index_num)
+                    solution[course_code] = index_num
+                    solution = generate_solution(
+                        course_codes, class_timetable_matrix, solutions, solution
+                    )
+                    solution.popitem()
+                    self.remove_index(class_timetable_matrix, index_info["Info"])
+
+                return solution
+
+        course_code = course_codes[0]
+        indexes: List[Dict] = self.class_timetables[course_code]["Indexes"]
+        solution = {}
+        solutions = []
+        for index_info in indexes:
+            # starting point of adding index of first course
+            class_timetable_matrix = self.add_index(
+                class_timetable_matrix, index_info["Info"]
+            )
+            solution[course_code] = index_info["Index"]
+            # using first course as anchor, expand upon it
+            generate_solution(
+                course_codes=course_codes[1:],
+                class_timetable_matrix=class_timetable_matrix,
+                solutions=solutions,
+                solution=solution
+            )
+            class_timetable_matrix = self.remove_index(
+                class_timetable_matrix, index_info["Info"]
+            )
+            solution.popitem()
+            print("Possibilities: ", solutions)
+            print("Count        : ", len(solutions))
+
+        return solutions
 
     def generate_exam_timetable(self, course_codes: List) -> Dict:
         """
@@ -130,8 +214,12 @@ class TimetableService:
                 time = exam_info["Time"].replace(" ", "")
                 duration = exam_info["Duration"].replace(" ", "")
                 duration_minute = self.parse_duration(duration)
-                start_exam_datetime = datetime.strptime(date + "T" + time, "%d%B%YT%I.%M%p")
-                end_exam_datetime = start_exam_datetime + timedelta(minutes=duration_minute)
+                start_exam_datetime = datetime.strptime(
+                    date + "T" + time, "%d%B%YT%I.%M%p"
+                )
+                end_exam_datetime = start_exam_datetime + timedelta(
+                    minutes=duration_minute
+                )
                 # date mapping stores a list of exam's time in each day
                 if date not in date_mapping:
                     date_mapping[date] = []
@@ -143,7 +231,7 @@ class TimetableService:
                     start=start_exam_datetime,
                     end=end_exam_datetime,
                     duration=duration,
-                    title=exam_info.get("Title", "")
+                    title=exam_info.get("Title", ""),
                 )
                 exam_timetable_dict[course_code] = info
             except Exception as e:
