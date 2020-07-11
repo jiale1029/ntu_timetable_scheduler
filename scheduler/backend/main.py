@@ -1,13 +1,13 @@
 import time
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
 
-from fastapi import FastAPI, Query, status, Request
+from fastapi import FastAPI, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from scheduler.backend.timetable_service import TimetableService
-from scheduler.backend.middleware import ProcessTimeMiddleware
 from scheduler.backend.exception import CourseNotFoundException
+from scheduler.backend.middleware import ProcessTimeMiddleware
+from scheduler.backend.timetable_service import TimetableService
 
 
 def register_middleware(app) -> None:

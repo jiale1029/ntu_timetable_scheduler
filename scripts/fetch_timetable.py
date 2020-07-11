@@ -7,10 +7,11 @@ NTU's public server and save as a html file for
 further parsing and processing.
 """
 
-import os
-import requests
 import logging
+import os
 from datetime import datetime as dt
+
+import requests
 
 CLASS_SCHEDULE_URL = "https://wish.wis.ntu.edu.sg/webexe/owa/AUS_SCHEDULE.main_display1"
 EXAM_SCHEDULE_URL = "https://wis.ntu.edu.sg/webexe/owa/exam_timetable_und.get_detail"

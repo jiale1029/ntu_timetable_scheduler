@@ -1,19 +1,15 @@
-import os
-import logging
 import json
-import numpy as np
+import logging
+import os
 from copy import deepcopy
 from datetime import datetime, timedelta
-from typing import List, Dict, Tuple
 from pprint import pprint
+from typing import Dict, List, Tuple
 
-from scheduler.backend.constants import (
-    TIME_MAPPING,
-    DAY_MAPPING,
-    ONLINE_GENERAL_COURSES,
-    COMMUNICATION_COURSES,
-)
+import numpy as np
 
+from scheduler.backend.constants import (COMMUNICATION_COURSES, DAY_MAPPING,
+                                         ONLINE_GENERAL_COURSES, TIME_MAPPING)
 
 log_dir = os.path.join(os.path.dirname(os.path.abspath("timetable_service.py")), "logs")
 FORMAT = "%(asctime)-15s : %(message)s"
@@ -43,7 +39,8 @@ class TimetableService:
         )
         if not os.path.exists(class_json_path):
             raise FileNotFoundError(
-                "The class timetable json file does not exist, please do indexing first."
+                "The class timetable json file does "
+                "not exist, please do indexing first."
             )
         with open(class_json_path, "r") as f:
             class_timetables: List[Dict] = json.load(f)

@@ -5,9 +5,9 @@ Parses the html retrieved from NTU's public server and
 save them as json file for easy processing.
 
 """
+import json
 import os
 import re
-import json
 import time
 from typing import Dict, List
 

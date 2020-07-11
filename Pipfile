@@ -4,7 +4,6 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
-flake8 = "*"
 
 [packages]
 fastapi = "*"
@@ -16,9 +15,10 @@ typing = "*"
 html5lib = "*"
 bs4 = "*"
 numpy = "*"
-pylint = "*"
 autopep8 = "*"
-flake8 = "*"
+isort = "*"
+pep8 = "*"
+pycodestyle = "*"
 
 [requires]
 python_version = "3.7"
