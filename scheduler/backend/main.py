@@ -67,7 +67,11 @@ def read_timetables(course_codes: Optional[List[str]] = Query(None)):
     exam_possibilities = ts.generate_exam_timetable(course_codes)
     if not exam_possibilities:
         return {"message": "There is a clash in the exam."}
-    class_possibilities = ts.generate_class_timetable(course_codes)
-    # if not class_possibilities:
-    #    return {"message": "No possible arrangement."}
-    return {"exam": exam_possibilities}
+    class_possibilities = ts.generate_class_timetable(course_codes, "")
+    if not class_possibilities:
+        return {"message": "No possible arrangement."}
+    return {
+        "class": class_possibilities,
+        "count": len(class_possibilities),
+        "exam": exam_possibilities,
+    }

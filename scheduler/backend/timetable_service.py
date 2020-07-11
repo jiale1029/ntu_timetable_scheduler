@@ -7,7 +7,12 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Tuple
 from pprint import pprint
 
-from scheduler.backend.constants import TIME_MAPPING, DAY_MAPPING
+from scheduler.backend.constants import (
+    TIME_MAPPING,
+    DAY_MAPPING,
+    ONLINE_GENERAL_COURSES,
+    COMMUNICATION_COURSES,
+)
 
 
 log_dir = os.path.join(os.path.dirname(os.path.abspath("timetable_service.py")), "logs")
@@ -72,10 +77,13 @@ class TimetableService:
         """
         Convert remarks to weeks
         """
+        splitted_weeks = []
         if "-" in remarks:
             # range
             week_range = remarks.split("Wk")[1].split("-")
-            splitted_weeks = [j for j in range(int(week_range[0]), int(week_range[-1])+1, 1)]
+            splitted_weeks = [
+                j for j in range(int(week_range[0]), int(week_range[-1]) + 1, 1)
+            ]
         elif "," in remarks:
             splitted_weeks = remarks.split("Wk")[1].split(",")
             splitted_weeks = [int(j) for j in splitted_weeks]
@@ -83,6 +91,11 @@ class TimetableService:
         return splitted_weeks
 
     def parse_day_time(self, time_range: str, day: str) -> List[Tuple[int]]:
+        """
+        Parses the day time into coordinates in Tuple.
+        """
+        if not time_range or not day:
+            return []
         times: List[int] = self.parse_time(time_range)
         day: int = self.parse_day(day)
         return [(time, day) for time in times]
@@ -107,91 +120,134 @@ class TimetableService:
         return minutes
 
     def add_index(self, class_timetable_matrix, index_infos: Dict):
+        weeks = [i for i in range(1, 14)]
         for index_info in index_infos:
             coordinates = self.parse_day_time(index_info["Time"], index_info["Day"])
-            for coord in coordinates:
-                class_timetable_matrix[coord] += 1
+            remarks = index_info["Remark"]
+            if remarks:
+                parsed_remarks = self.parse_remark(remarks)
+                weeks = parsed_remarks
+            for week in weeks:
+                for coord in coordinates:
+                    class_timetable_matrix[week][coord] += 1
         return class_timetable_matrix
 
     def remove_index(self, class_timetable_matrix, index_infos: Dict):
+        weeks = [i for i in range(1, 14)]
         for index_info in index_infos:
             coordinates = self.parse_day_time(index_info["Time"], index_info["Day"])
-            for coord in coordinates:
-                class_timetable_matrix[coord] -= 1
+            remarks = index_info["Remark"]
+            if remarks:
+                parsed_remarks = self.parse_remark(remarks)
+                weeks = parsed_remarks
+            for week in weeks:
+                for coord in coordinates:
+                    class_timetable_matrix[week][coord] -= 1
+
         return class_timetable_matrix
 
-    def generate_class_timetable(self, course_codes: List) -> List[Dict]:
+    def filter_online_courses(self, course_codes: List[str]):
+        """
+        Filter out the online courses.
+        """
+        return [cc for cc in course_codes if cc not in ONLINE_GENERAL_COURSES]
+
+    def filter_by_group(self, indexes: List[Dict], group: str):
+        """
+        Filter the indexes based on group.
+        """
+        filtered = []
+        if group == "":
+            return indexes
+
+        for index in indexes:
+            infos = index["Info"]
+            for info in infos:
+                if info["Group"][0] == "A" or info["Group"][0] == "B":
+                    continue
+                elif group.upper() not in info["Group"]:
+                    break
+            else:
+                filtered.append(index)
+
+        return filtered
+
+    def generate_class_timetable(
+        self, course_codes: List, user_group: str
+    ) -> List[Dict]:
         """
         Use the course codes to retrieve all the possible indexes,
         generate all possible configuration for every courses.
         During the generation process, check if there's a clash
         in the newly added index, if there is one, stop and try next.
         """
+        course_codes = self.filter_online_courses(course_codes)
         count: int = len(course_codes)
-        dup_course_codes = deepcopy(course_codes)
-        course_added: Dict = {}
-        class_timetable_matrix = np.zeros((32, 6), dtype=int)
-        course_stack = {cc: self.class_timetables[cc]["Indexes"] for cc in course_codes}
-        res: List[Dict] = []
+        class_timetable_matrix = {i: np.zeros((32, 6), dtype=int) for i in range(1, 14)}
+        solution: Dict = {}
+        solutions: Dict = []
 
         def generate_solution(
-            course_codes: List, class_timetable_matrix,
-            solutions: List[Dict], solution: Dict
+            course_codes: List,
+            class_timetable_matrix,
+            solutions: List[Dict],
+            solution: Dict,
         ) -> List[Dict]:
 
             if len(course_codes) == 0:
                 # return dictionary that contains a single possibility
                 if len(solution) == count:
-                    print(class_timetable_matrix)
                     solutions.append(deepcopy(solution))
-                    print("Inside solutions: ", solutions)
                 return solution
             else:
-                course_code = course_codes.pop()
+                course_code = course_codes[0]
                 indexes: List[Dict] = self.class_timetables[course_code]["Indexes"]
+                if course_code == "HW0188" or course_code == "HW0288":
+                    indexes = self.filter_by_group(indexes, user_group)
 
                 for index_info in indexes:
                     if self.check_class_clash(
                         self.add_index(class_timetable_matrix, index_info["Info"])
                     ):
                         # if clash, try the next index
-                        print(f"Clash for: {index_info['Index']}")
                         self.remove_index(class_timetable_matrix, index_info["Info"])
                         continue
                     index_num = index_info["Index"]
-                    print(course_code, ":", index_num)
-                    solution[course_code] = index_num
+                    solution[course_code] = index_info
                     solution = generate_solution(
-                        course_codes, class_timetable_matrix, solutions, solution
+                        course_codes[1:], class_timetable_matrix, solutions, solution
                     )
                     solution.popitem()
                     self.remove_index(class_timetable_matrix, index_info["Info"])
-
                 return solution
 
-        course_code = course_codes[0]
+        if count == 0:
+            return solutions
+
+        course_code: str = course_codes[0]
         indexes: List[Dict] = self.class_timetables[course_code]["Indexes"]
-        solution = {}
-        solutions = []
+        if course_code in COMMUNICATION_COURSES:
+            indexes = self.filter_by_group(indexes, user_group)
+        logger.info("Generating timetable...")
         for index_info in indexes:
             # starting point of adding index of first course
             class_timetable_matrix = self.add_index(
                 class_timetable_matrix, index_info["Info"]
             )
-            solution[course_code] = index_info["Index"]
+            solution[course_code] = index_info
             # using first course as anchor, expand upon it
             generate_solution(
                 course_codes=course_codes[1:],
                 class_timetable_matrix=class_timetable_matrix,
                 solutions=solutions,
-                solution=solution
+                solution=solution,
             )
             class_timetable_matrix = self.remove_index(
                 class_timetable_matrix, index_info["Info"]
             )
             solution.popitem()
-            print("Possibilities: ", solutions)
-            print("Count        : ", len(solutions))
+        logger.info(f"Possibilities: {solutions}")
+        logger.info(f"Count        : {len(solutions)}")
 
         return solutions
 
@@ -256,9 +312,12 @@ class TimetableService:
                 max_low = time
         return False
 
-    def check_class_clash(self, timetable_matrix) -> bool:
+    def check_class_clash(self, timetable_matrixes) -> bool:
         """
         Check if there's a conflict in the index.
         """
-        timetable_clashes = timetable_matrix >= 2
-        return timetable_clashes.any()
+        for key, timetable_matrix in timetable_matrixes.items():
+            timetable_clashes = timetable_matrix >= 2
+            if timetable_clashes.any():
+                return True
+        return False

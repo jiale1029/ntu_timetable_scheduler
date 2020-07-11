@@ -34,3 +34,23 @@ TIME_MAPPING = {
 }
 
 DAY_MAPPING = {"MON": 0, "TUE": 1, "WED": 2, "THU": 3, "FRI": 4, "SAT": 5}
+
+ONLINE_GENERAL_COURSES = {"ET0001", "GC0001", "HY0001", "ML0001", "ML0002", "ML0003"}
+COMMUNICATION_COURSES = {"HW0188", "HW0288", "HW0128", "HW0228"}
+
+ONLINE_COURSES_GROUP_MAPPING = {
+    "SCE": "SCSE",
+    "MAT": "MAT",
+    "MA": "MAE",
+    "CV": "CEE",
+    "EEE": "EEE",
+    "MSE": "MSE",
+    "LKCMedicine": "LKCMedicine",
+    "NBS": "NBS",
+    "SPMS": "SPMS",
+    "WKWSCI": "WKWSCI",
+    "ADM": "ADM",
+    "CB": "CBE",
+    "HSS": "HSS",
+    "Others": "Others",
+}
