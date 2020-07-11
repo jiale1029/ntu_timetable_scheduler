@@ -243,7 +243,6 @@ class TimetableService:
                 class_timetable_matrix, index_info["Info"]
             )
             solution.popitem()
-        logger.info(f"Possibilities: {solutions}")
         logger.info(f"Count        : {len(solutions)}")
 
         return solutions
