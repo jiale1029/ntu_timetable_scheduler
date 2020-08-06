@@ -1,0 +1,14 @@
+th {
+  width: 10%;
+}
+
+table,
+th,
+td {
+  border: 1px solid black;
+  text-align: center;
+}
+
+table {
+  overflow-x: auto;
+}

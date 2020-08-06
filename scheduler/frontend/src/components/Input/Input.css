@@ -1,0 +1,20 @@
+input {
+  border-radius: 5px;
+  border: 1px solid black;
+  margin: 20px;
+  padding: 10px;
+  text-align: center;
+  font-size: 120%;
+  text-transform: uppercase;
+}
+
+input:active {
+  background: lightcyan;
+}
+
+@media only screen and (max-width: 320px) {
+  input {
+    margin: 10px;
+    padding: 8px;
+  }
+}

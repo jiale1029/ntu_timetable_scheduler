@@ -2,7 +2,7 @@ shell:
 	@pipenv shell
 
 run:
-	@uvicorn scheduler.backend.main:app --reload
+	@uvicorn --host 0.0.0.0 scheduler.backend.main:app --reload --log-level debug
 
 lint:
 	@pycodestyle --max-line-length=88 $(shell find . -name "*.py")

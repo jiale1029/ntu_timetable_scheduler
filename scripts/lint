@@ -1,0 +1,76 @@
+#!/bin/bash
+
+set -e
+
+# colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+NO_COLOR='\033[0m'
+
+# subroutines
+yell() {
+  echo -e "$RED$0: $*$NO_COLOR" >&2
+}
+
+die() {
+  yell "$*"
+  exit 77
+}
+
+try() {
+  "$@" || die "Error when running '$*'"
+}
+
+success() {
+  echo -e "$GREEN${*:-success}$NO_COLOR"
+}
+
+warning() {
+  echo -e "$YELLOW$*$NO_COLOR"
+}
+
+cont() {
+  warning "Error occured but we can continue. Please re-check problems manually."
+}
+
+# linting
+echo "Running linter with flake8..."
+try flake8 scripts scheduler/backend --max-line-length=88 --ignore=E203,W503
+success
+
+# static type check
+echo "Running static type check..."
+try mypy scheduler/backend --ignore-missing-imports --disallow-untyped-defs
+success
+
+# formatting
+echo "Running formatter with black..."
+try black \
+    --line-length=88 \
+    scheduler/backend scripts
+success
+
+# isort
+echo "Run import sorting with isort..."
+try isort \
+  --atomic \
+  --recursive \
+  --project=scheduler/backend,scripts \
+  --section-default=THIRDPARTY \
+  --multi-line=3 \
+  --force-grid-wrap=0 \
+  --combine-as \
+  --line-width=88 \
+  --apply \
+  worker tests
+success
+
+# repeat static type check and linting
+echo "Run mypy again..."
+try mypy scheduler/backend scripts --ignore-missing-imports --disallow-untyped-defs
+success
+
+echo "Running linter with flake8 again..."
+try flake8 scheduler/backend scripts --max-line-length=88 --ignore=E203,W503
+success

@@ -8,17 +8,22 @@ from typing import Dict, List, Tuple
 
 import numpy as np
 
-from scheduler.backend.constants import (COMMUNICATION_COURSES, DAY_MAPPING,
-                                         ONLINE_GENERAL_COURSES, TIME_MAPPING)
+from scheduler.backend.constants import (
+    COMMUNICATION_COURSES,
+    DAY_MAPPING,
+    ONLINE_GENERAL_COURSES,
+    TIME_MAPPING,
+)
 
 log_dir = os.path.join(os.path.dirname(os.path.abspath("timetable_service.py")), "logs")
 FORMAT = "%(asctime)-15s : %(message)s"
-logging.basicConfig(
-    level=logging.DEBUG,
-    filename=os.path.join(log_dir, "timetable_service.log"),
-    format=FORMAT,
-)
+
 logger = logging.getLogger(__file__)
+file_handler = logging.FileHandler(os.path.join(log_dir, "timetable_service.log"))
+formatter = logging.Formatter(FORMAT)
+file_handler.setLevel(logging.INFO)
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
 
 
 class TimetableService:
@@ -55,7 +60,8 @@ class TimetableService:
             exam_timetables: List[Dict] = json.load(f)
         return class_timetables, exam_timetables
 
-    def parse_time(self, time_range: str) -> List[int]:
+    @staticmethod
+    def parse_time(time_range: str) -> List[int]:
         """
         Convert the time to coordinates on a matrix
         """
@@ -70,7 +76,8 @@ class TimetableService:
         """
         return DAY_MAPPING[day]
 
-    def parse_remark(self, remarks: str) -> str:
+    @staticmethod
+    def parse_remark(remarks: str) -> str:
         """
         Convert remarks to weeks
         """
@@ -181,8 +188,8 @@ class TimetableService:
         course_codes = self.filter_online_courses(course_codes)
         count: int = len(course_codes)
         class_timetable_matrix = {i: np.zeros((32, 6), dtype=int) for i in range(1, 14)}
-        solution: Dict = {}
-        solutions: Dict = []
+        solution: List = []
+        solutions: List = []
 
         def generate_solution(
             course_codes: List,
@@ -210,11 +217,12 @@ class TimetableService:
                         self.remove_index(class_timetable_matrix, index_info["Info"])
                         continue
                     index_num = index_info["Index"]
-                    solution[course_code] = index_info
+                    index_info["Code"] = course_code
+                    solution.append(index_info)
                     solution = generate_solution(
                         course_codes[1:], class_timetable_matrix, solutions, solution
                     )
-                    solution.popitem()
+                    solution.pop()
                     self.remove_index(class_timetable_matrix, index_info["Info"])
                 return solution
 
@@ -225,13 +233,14 @@ class TimetableService:
         indexes: List[Dict] = self.class_timetables[course_code]["Indexes"]
         if course_code in COMMUNICATION_COURSES:
             indexes = self.filter_by_group(indexes, user_group)
-        logger.info("Generating timetable...")
+        logger.debug("Generating timetable...")
         for index_info in indexes:
             # starting point of adding index of first course
             class_timetable_matrix = self.add_index(
                 class_timetable_matrix, index_info["Info"]
             )
-            solution[course_code] = index_info
+            index_info["Code"] = course_code
+            solution.append(index_info)
             # using first course as anchor, expand upon it
             generate_solution(
                 course_codes=course_codes[1:],
@@ -242,10 +251,43 @@ class TimetableService:
             class_timetable_matrix = self.remove_index(
                 class_timetable_matrix, index_info["Info"]
             )
-            solution.popitem()
-        logger.info(f"Count        : {len(solutions)}")
+            solution.pop()
+        logger.debug(f"Count        : {len(solutions)}")
 
-        return solutions
+        day_solutions = []
+
+        # each solution is in array that contains a dictionary
+        for sol in solutions:
+            # multiple courses in each solution
+            day_solution = {
+                "solutions": {
+                    "mon": [],
+                    "tue": [],
+                    "wed": [],
+                    "thu": [],
+                    "fri": [],
+                    "sat": [],
+                },
+                "stats": {},
+            }
+            for course in sol:
+                index_num = course["Index"]
+                course_code = course["Code"]
+                if course_code not in day_solution["stats"]:
+                    day_solution["stats"][course_code] = index_num
+                for info in course["Info"]:
+                    info["Code"] = course_code
+                    info["Index"] = index_num
+                    day_solution["solutions"][info["Day"].lower()].append(info)
+            # sort the day class by time
+            for day in day_solution["solutions"].keys():
+                day_solution["solutions"][day] = sorted(
+                    day_solution["solutions"][day], key=lambda x: x["Time"]
+                )
+
+            day_solutions.append(day_solution)
+
+        return day_solutions
 
     def generate_exam_timetable(self, course_codes: List) -> Dict:
         """

@@ -1,0 +1,22 @@
+ul {
+  list-style: none;
+  text-align: center;
+}
+
+li:first-child input {
+  
+}
+
+li:last-child button {
+  color: blue;
+}
+
+#queryBtn {
+  border-radius: 5px;
+  border: 1px solid black;
+  margin: 23px;
+  padding: 10px;
+  text-align: center;
+  font-size: 80%;
+  text-transform: uppercase;
+}

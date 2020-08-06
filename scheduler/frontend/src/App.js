@@ -1,10 +1,13 @@
 import React from "react";
 import "./App.css";
+import MainPage from "./components/MainPage/MainPage";
 
-const App = () => (
-  <div>
-    <h2 id="heading">Hello ReactJS </h2>
-  </div>
-);
+const App = () => {
+  return (
+    <div>
+      <MainPage />
+    </div>
+  );
+};
 
 export default App;
