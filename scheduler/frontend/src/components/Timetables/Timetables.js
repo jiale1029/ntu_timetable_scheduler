@@ -7,11 +7,11 @@ const Timetables = (props) => {
   const setCurrentPage = props.setCurrentPage;
 
   const renderTimetable = () => {
-    if (!props.data.class) {
+    if (!props.data) {
       return "";
     }
 
-    const solutions = props.data.class;
+    const solutions = props.data;
 
     const timetables = solutions.map((sol) => {
       const joinedKey = Object.values(sol.stats)
@@ -25,10 +25,12 @@ const Timetables = (props) => {
   };
 
   const renderPageBtn = (timetables) => {
-    const pageElem = (
+    const pageElem = timetables.length ? (
       <p>
         {currentPage}/{timetables.length}
       </p>
+    ) : (
+      <p />
     );
 
     const prevBtn = (
@@ -43,7 +45,7 @@ const Timetables = (props) => {
       </button>
     );
 
-    if (!timetables) {
+    if (!timetables.length) {
       return "";
     }
 
@@ -74,7 +76,6 @@ const Timetables = (props) => {
   };
 
   const timetables = renderTimetable();
-  const pageBtn = renderPageBtn(timetables);
 
   useEffect(() => {
     if (currentPage === 0) {
@@ -84,7 +85,7 @@ const Timetables = (props) => {
 
   return (
     <div className="timetables">
-      {timetables && <div>{pageBtn}</div>}
+      {timetables && <div>{renderPageBtn(timetables)}</div>}
       {timetables && timetables[currentPage - 1]}
     </div>
   );

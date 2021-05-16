@@ -3,11 +3,12 @@ import CourseInputs from "../CourseInputs/CourseInputs";
 import Timetables from "../Timetables/Timetables";
 
 const MainPage = () => {
-  const [timetableData, setTimetableData] = useState({});
+  const [timetableData, setTimetableData] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
 
+
   const callbackRetrieveTimetableData = (data) => {
-    setTimetableData(data);
+    setTimetableData(data.class);
     setCurrentPage(0);
   };
 

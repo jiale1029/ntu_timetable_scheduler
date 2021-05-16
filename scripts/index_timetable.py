@@ -115,15 +115,16 @@ for idx, course in enumerate(courses):
 
 with open(os.path.join(timetable_dir, "latest_class_timetable.json"), "w") as file:
     file.write(json.dumps(course_index_mapping))
-
+print("Course Dumping completed...")
 with open(os.path.join(exam_timetable_dir, latest_exam_timetable), "r") as f:
     content = f.read()
     contents = re.split("<BR>\n<BR>\n<BR>\n", content)
-    dfs = pd.read_html(contents[1])
-    df = dfs[0]
+    dfs = pd.read_html(contents[0])
+    df = dfs[2]
     exam_course_mapping = dict()
     for idx in range(len(df)):
         code = df[3][idx]
+        print(f"Indexing exam: {code}")
         if code not in course_index_mapping:
             continue
         exam_course_mapping[code] = dict()

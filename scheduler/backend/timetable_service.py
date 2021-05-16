@@ -49,6 +49,7 @@ class TimetableService:
             )
         with open(class_json_path, "r") as f:
             class_timetables: List[Dict] = json.load(f)
+        exam_timetables = {}
         exam_json_path: str = os.path.join(
             root_dir, "timetable", "latest_exam_timetable.json"
         )
@@ -159,17 +160,19 @@ class TimetableService:
     def filter_by_group(self, indexes: List[Dict], group: str):
         """
         Filter the indexes based on group.
+        Only filter communication courses.
         """
         filtered = []
-        if group == "":
+
+        if group == "": # if no group specified, return all indexes
             return indexes
 
         for index in indexes:
             infos = index["Info"]
             for info in infos:
-                if info["Group"][0] == "A" or info["Group"][0] == "B":
-                    continue
-                elif group.upper() not in info["Group"]:
+                # if info["Group"][0] == "A" or info["Group"][0] == "B":
+                #     continue
+                if group.upper() not in info["Group"]: # break does not run the else statement, so if doesn't match then you don't add
                     break
             else:
                 filtered.append(index)
@@ -186,7 +189,6 @@ class TimetableService:
         in the newly added index, if there is one, stop and try next.
         """
         course_codes = self.filter_online_courses(course_codes)
-        count: int = len(course_codes)
         class_timetable_matrix = {i: np.zeros((32, 6), dtype=int) for i in range(1, 14)}
         solution: List = []
         solutions: List = []
@@ -226,11 +228,11 @@ class TimetableService:
                     self.remove_index(class_timetable_matrix, index_info["Info"])
                 return solution
 
-        if count == 0:
+        if len(course_codes) == 0:
             return solutions
 
         course_code: str = course_codes[0]
-        indexes: List[Dict] = self.class_timetables[course_code]["Indexes"]
+        indexes: List[Dict] = self.class_timetables[course_code]["Indexes"] # read the indexes of this course
         if course_code in COMMUNICATION_COURSES:
             indexes = self.filter_by_group(indexes, user_group)
         logger.debug("Generating timetable...")

@@ -125,7 +125,7 @@ def read_timetables(course_code: Optional[List[str]] = Query(None)):
 @app.get("/api/course/search", status_code=status.HTTP_200_OK)
 def search_course(query: Optional[str]):
     return [
-        {key: class_timetables[key]}
+        {"Code": class_timetables[key]["Code"], "Title": class_timetables[key]["Title"]}
         for key in class_timetables.keys()
         if query in key or query.lower() in class_timetables[key]["Title"].lower()
     ]

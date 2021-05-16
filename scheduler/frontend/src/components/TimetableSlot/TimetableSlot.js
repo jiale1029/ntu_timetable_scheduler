@@ -1,8 +1,9 @@
 import React from "react";
+import "./TimetableSlot.css";
 
 const TimetableSlot = (props) => {
   return (
-    <div>
+    <td className="course" colSpan={props.colSpan}>
       <ul>
         <li>{props.code}</li>
         <li>{props.index}</li>
@@ -12,7 +13,7 @@ const TimetableSlot = (props) => {
         <li>{props.time}</li>
         <li>{props.venue}</li>
       </ul>
-    </div>
+    </td>
   );
 };
 

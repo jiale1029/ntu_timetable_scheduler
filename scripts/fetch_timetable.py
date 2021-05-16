@@ -9,6 +9,7 @@ further parsing and processing.
 
 import logging
 import os
+import argparse
 from datetime import datetime as dt
 
 import requests
@@ -34,9 +35,10 @@ try:
     request_data = dict()
     request_data["r_search_type"] = "F"
     request_data["boption"] = "Search"
-    request_data["acadsem"] = "2020;1"
+    request_data["acadsem"] = "2020;2"
     request_data["r_subj_code"] = ""
     request_data["staff_access"] = "false"
+    pring(request_data)
     resp = requests.post(url=CLASS_SCHEDULE_URL, data=request_data)
     with open(
         os.path.join(
@@ -61,12 +63,13 @@ try:
     request_data["p_subj"] = ""
     request_data["p_venue"] = ""
     request_data["p_matric"] = ""
-    request_data["p_plan_no"] = "103"
+    request_data["p_plan_no"] = "104"
     request_data["p_exam_yr"] = "2020"
-    request_data["p_semester"] = "1"
+    request_data["p_semester"] = "2"
     request_data["p_type"] = "UE"
-    request_data["academic_session"] = "Semester 1 Academic Year 2020-2021"
+    request_data["academic_session"] = "Semester 2 Academic Year 2020-2021"
     request_data["bOption"] = "Next"
+    pring(request_data)
     resp = requests.post(url=EXAM_SCHEDULE_URL, data=request_data)
     with open(
         os.path.join(timetable_dir, "exam", current_timestamp + "_exam_timetable.html"),

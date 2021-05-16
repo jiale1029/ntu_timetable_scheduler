@@ -21,6 +21,7 @@ const Timetable = (props) => {
     "1430",
     "1500",
     "1530",
+    "1600",
     "1630",
     "1700",
     "1730",
@@ -44,6 +45,24 @@ const Timetable = (props) => {
     return times.slice(startIdx, endIdx);
   };
 
+  const fillTimetable = (timetableDayArray, count) => {
+    for (let i = times.length - count; i < times.length; i++) {
+      timetableDayArray.push(
+        <TimetableSlot
+          key={`${props.id}${times[i]}`}
+          code=""
+          index=""
+          group=""
+          type=""
+          day=""
+          venue=""
+          time={times[i]}
+        />
+      );
+    }
+    return timetableDayArray;
+  };
+
   const renderTimetableSlot = () => {
     const data = props.data;
 
@@ -52,45 +71,48 @@ const Timetable = (props) => {
 
       const dayTimetable = [];
       let latestIdx = 0;
+      let totalColSpan = times.length;
 
       dayData.forEach((elem) => {
         let parsedTime = parseTime(elem["Time"]);
-        let colSpan = parsedTime.length;
-        const currentIdx = times.indexOf(parsedTime[0]);
+        let colSpan = parsedTime.length ? parsedTime.length : 1;
 
+        const currentIdx = times.indexOf(parsedTime[0]);
         // add slots that are empty and no class occupied
         for (let i = latestIdx; i < currentIdx; i++) {
           dayTimetable.push(
-            <td key={`${props.id}${times[i]}`}>
-              <TimetableSlot
-                code=""
-                index=""
-                group=""
-                type=""
-                day=""
-                venue=""
-                time={times[i]}
-              />
-            </td>
+            <TimetableSlot
+              key={`${props.id}${times[i]}`}
+              code=""
+              index=""
+              group=""
+              type=""
+              day=""
+              venue=""
+              time={times[i]}
+            />
           );
+          totalColSpan -= 1;
         }
 
         latestIdx = times.indexOf(parsedTime[parsedTime.length - 1]) + 1;
 
         dayTimetable.push(
-          <td key={`${props.id}${elem.Time}`} colSpan={colSpan}>
-            <TimetableSlot
-              code={elem.Code}
-              index={elem.Index}
-              group={elem.Group}
-              type={elem.Type}
-              day={elem.Day}
-              venue={elem.Venue}
-              time={elem.Time}
-            />
-          </td>
+          <TimetableSlot
+            key={`${props.id}${times[latestIdx - colSpan]}`}
+            colSpan={colSpan}
+            code={elem.Code}
+            index={elem.Index}
+            group={elem.Group}
+            type={elem.Type}
+            day={elem.Day}
+            venue={elem.Venue}
+            time={elem.Time}
+          />
         );
+        totalColSpan -= colSpan;
       });
+      fillTimetable(dayTimetable, totalColSpan);
 
       return dayTimetable;
     });
