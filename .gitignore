@@ -1,4 +1,4 @@
 **/logs
 .DS_Store
 **/__pycache__
-**/timetable
+timetable/**
