@@ -1,92 +1,56 @@
 import React, { useEffect, useState } from "react";
+import Pagination from "@material-ui/lab/Pagination";
 import Timetable from "../Timetable/Timetable";
 import "./Timetables.css";
 
 const Timetables = (props) => {
-  const currentPage = props.currentPage;
-  const setCurrentPage = props.setCurrentPage;
+  
+  const [currentPage, setCurrentPage] = useState(0);
 
-  const renderTimetable = () => {
-    if (!props.data) {
-      return "";
+  const renderTimetable = (currentPage) => {
+    if (!props.data || currentPage < 1) {
+      return true;
     }
 
     const solutions = props.data;
 
-    const timetables = solutions.map((sol) => {
-      const joinedKey = Object.values(sol.stats)
-        .map((indexNum) => indexNum)
-        .join("");
+    // console.log(currentPage);
+    const sol = solutions[currentPage-1];
+    const joinedKey = Object.values(sol.stats).map((indexNum) => indexNum).join("");
 
-      return <Timetable id={joinedKey} key={joinedKey} data={sol.solutions} />;
-    });
+    return <Timetable id={joinedKey} key={joinedKey} data={sol.solutions} />;
+    // const timetables = solutions.map((sol) => {
+    //   const joinedKey = Object.keys(sol.stats)
+    //   .map((indexNum) => indexNum)
+    //   .join("_");
+      
+    //   console.log(joinedKey);
+    //   return <Timetable id={joinedKey} key={joinedKey.toString()} data={sol.solutions} />;
+    // });
 
-    return timetables;
+    // return timetables;
   };
-
-  const renderPageBtn = (timetables) => {
-    const pageElem = timetables.length ? (
-      <p>
-        {currentPage}/{timetables.length}
-      </p>
-    ) : (
-      <p />
-    );
-
-    const prevBtn = (
-      <button type="button" onClick={() => setCurrentPage(currentPage - 1)}>
-        Previous Page
-      </button>
-    );
-
-    const nextBtn = (
-      <button type="button" onClick={() => setCurrentPage(currentPage + 1)}>
-        Next Page
-      </button>
-    );
-
-    if (!timetables.length) {
-      return "";
-    }
-
-    if (currentPage + 1 > timetables.length) {
-      return (
-        <div>
-          {prevBtn}
-          {pageElem}
-        </div>
-      );
-    }
-
-    if (currentPage - 1 === 0) {
-      return (
-        <div>
-          {pageElem}
-          {nextBtn}
-        </div>
-      );
-    }
-    return (
-      <div>
-        {prevBtn}
-        {pageElem}
-        {nextBtn}
-      </div>
-    );
-  };
-
-  const timetables = renderTimetable();
-
+  
   useEffect(() => {
-    if (currentPage === 0) {
-      setCurrentPage(1);
+    if(props.data && props.data.length > 0){
+      setCurrentPage(1);    
+    } else {
+      setCurrentPage(0);
     }
-  }, [timetables]);
+  }, [props.data]);
+
+  
+  let timetable = <Timetable />;
+  
+  if(currentPage > 0) {
+    timetable = renderTimetable(currentPage);
+  }
 
   return (
     <div className="timetables">
-      {timetables && <div>{renderPageBtn(timetables)}</div>}
-      {timetables && timetables[currentPage - 1]}
+      {currentPage !== 0 && <Pagination page={currentPage} onChange={(evt, page) => setCurrentPage(page)} count={props.data.length} siblingCount={1} boundaryCount={1}/>}
+      {/* {timetables && timetables[currentPage - 1]} */}
+      {timetable && timetable}
     </div>
   );
 };

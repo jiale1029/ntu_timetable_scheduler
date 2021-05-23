@@ -1,57 +1,101 @@
 import React, { useState } from "react";
+import Button from "@material-ui/core/Button";
+import SearchIcon from "@material-ui/icons/Search";
+import Divider from "@material-ui/core/Divider";
+import List from "@material-ui/core/List";
+import ListItem from "@material-ui/core/ListItem";
+
 import Input from "../Input/Input";
 import timetableServices from "../../services/timetableServices";
 import "./CourseInputs.css";
 
 const CourseInputs = (props) => {
   const [loading, setLoading] = useState(false);
-  const [courseCodeInputs, setCourseCodeInputs] = useState([""]);
+
+  const [courseCodeInputs, setCourseCodeInputs] = useState([
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+  ]);
   const [searchResults, setSearchResults] = useState([
     {
       suggestions: [],
-      showSuggestions: false,
+    },
+    {
+      suggestions: [],
+    },
+    {
+      suggestions: [],
+    },
+    {
+      suggestions: [],
+    },
+    {
+      suggestions: [],
+    },
+    {
+      suggestions: [],
+    },
+    {
+      suggestions: [],
+    },
+    {
+      suggestions: [],
+    },
+    {
+      suggestions: [],
+    },
+    {
+      suggestions: [],
     },
   ]);
 
-  const updateCoursesHandler = (evt, id) => {
-    const courseCodeCopy = courseCodeInputs.slice();
-    courseCodeCopy[id] = evt.target.value.toUpperCase();
-    setCourseCodeInputs(courseCodeCopy);
+  const updateCoursesHandler = (id, value, reason) => {
+    if (reason === "select-option"){
+      setCourseCodeInputs((prevCourseCodeInputs) => {
+        prevCourseCodeInputs[id] = value.Code.toUpperCase();
+        return [...prevCourseCodeInputs];
+      });
+    } else if (reason === "clear"){
+      setCourseCodeInputs((prevCourseCodeInputs) => {
+        prevCourseCodeInputs[id] = "";
+        return [...prevCourseCodeInputs];
+      })
+    }
   };
 
-  const queryCourseHandler = async (evt, id) => {
-    const userInput = evt.target.value;
-    if (userInput.length <= 2) {
+  // Query course on typing
+  const queryCourseHandler = async (id, value, reason) => {
+    if(reason === "reset"){
+      setSearchResults((prevResults) => {
+        prevResults[id].suggestions = [];
+        return [...prevResults];
+      });
+
       return true;
     }
-    const searchResultsCopy = searchResults.slice();
+    // only query if length > 2
+    if (value.length <= 2)
+      return true;
 
-    const results = await timetableServices.queryCourse(userInput);
-    searchResultsCopy[id].suggestions = results.data;
-    searchResultsCopy[id].showSuggestions = true;
-    // TODO: toggle the showSuggestions for each
-    setSearchResults(searchResultsCopy);
-  };
+    if (reason === "input"){
+      // only query when user is typing, not selecting one of the suggestions
+      const userInput = value.toUpperCase();
+      const results = await timetableServices.queryCourse(userInput);
 
-  const addInputHandler = () => {
-    const courseCodeCopy = courseCodeInputs.slice();
-    courseCodeCopy.push("");
-    const searchResultsCopy = searchResults.slice();
-    searchResultsCopy.push({
-      suggestions: [],
-      showSuggestions: false,
-    });
-    setCourseCodeInputs(courseCodeCopy);
-    setSearchResults(searchResultsCopy);
-  };
-
-  const deleteInputHandler = (id) => {
-    const courseCodeCopy = courseCodeInputs.slice();
-    courseCodeCopy.splice(id, 1);
-    const searchResultsCopy = searchResults.slice();
-    searchResultsCopy.splice(id, 1);
-    setCourseCodeInputs(courseCodeCopy);
-    setSearchResults(searchResultsCopy);
+      setSearchResults((prevSearchResults) => {
+        prevSearchResults[id].suggestions = results.data;
+        return [...prevSearchResults]
+      });
+      return true;
+    }
   };
 
   const queryClickHandler = async (e) => {
@@ -59,15 +103,20 @@ const CourseInputs = (props) => {
     e.preventDefault();
 
     try {
+      // filter any empty entry
       const courseCodesFiltered = new Set(
         courseCodeInputs.filter((courseCode) => courseCode !== "")
       );
 
-      const respBody = await timetableServices.getTimetables([
-        ...courseCodesFiltered,
-      ]);
-      const respData = respBody.data;
-      props.callbackFromParent(respData);
+      if (courseCodesFiltered.size > 0) {
+        // query backend for the course details
+        const respBody = await timetableServices.getTimetables([
+          ...courseCodesFiltered,
+        ]);
+        const respData = respBody.data;
+        props.setTimetableData(respData.class);
+        props.setOpen(false);
+      }
     } catch (error) {
       console.log(error);
     } finally {
@@ -75,46 +124,38 @@ const CourseInputs = (props) => {
     }
   };
 
-  const deleteBtn = (arrayLength, idx) => {
-    return arrayLength === 1 ? (
-      ""
-    ) : (
-      <button type="button" onClick={() => deleteInputHandler(idx)}>
-        -
-      </button>
-    );
-  };
-
   const inputs = courseCodeInputs.map((c, idx) => (
-    <li key={idx}>
+    <ListItem key={idx}>
       <Input
         name={`courseInput-${idx}`}
-        onKeyPress={
-          idx === courseCodeInputs.length - 1 ? addInputHandler : undefined
-        }
-        onChange={(evt) => {
-          updateCoursesHandler(evt, idx);
-          queryCourseHandler(evt, idx);
-        }}
-        showSuggestions={searchResults[idx].showSuggestions}
+        courseInputIdx={idx}
+        onChangeHandler={updateCoursesHandler}
+        onInputChangeHandler={queryCourseHandler}
         suggestions={searchResults[idx].suggestions}
-        value={c}
       />
-      {deleteBtn(courseCodeInputs.length, idx)}
-    </li>
+      <Divider />
+    </ListItem>
   ));
 
   return (
     <div>
       <form>
-        <ul>
-          <li>
-            <button id="queryBtn" type="submit" onClick={queryClickHandler}>
-              {loading ? "Loading..." : "Query Possible Timetables!"}
-            </button>
-          </li>
+        <List>
+          <ListItem>
+            <Button
+              id="queryBtn"
+              type="submit"
+              onClick={queryClickHandler}
+              variant="contained"
+              color="primary"
+              size="large"
+              endIcon={<SearchIcon />}
+            >
+              {loading ? "Loading..." : "Query"}
+            </Button>
+          </ListItem>
           {inputs}
-        </ul>
+        </List>
       </form>
     </div>
   );

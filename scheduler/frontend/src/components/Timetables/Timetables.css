@@ -2,6 +2,36 @@
   text-align: center;
 }
 
-button {
-  margin: 5px;
+#your-table{   
+  display: flex;
+}  
+
+.timetable-column{
+  display: inline-grid;
+  margin-left: 0px;
+  position: relative
+}
+
+.slot{
+  position: absolute;
+  top: 10px;
+  background-color: grey;
+  width: 100px;
+  height: 150px;
+  z-index: 1;
+}
+
+.timetable-column>span{
+  /* background-color: orange; */
+  width: 100px;
+  height: 100px;
+  border: 1px solid;
+  display: inline-block;
+  text-align: center;
+  position: relative;
+}
+
+div>span:first-child{
+  background-color: green;
+  height: 25px;
 }

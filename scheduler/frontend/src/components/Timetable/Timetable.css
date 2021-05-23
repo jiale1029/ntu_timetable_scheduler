@@ -1,14 +1,4 @@
-th {
-  width: 10%;
-}
-
-table,
 th,
 td {
-  border: 1px solid black;
-  text-align: center;
-}
-
-table {
-  overflow-x: auto;
+  border: 1px solid rgba(224, 224, 224, 1);
 }

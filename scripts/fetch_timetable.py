@@ -38,7 +38,7 @@ try:
     request_data["acadsem"] = "2020;2"
     request_data["r_subj_code"] = ""
     request_data["staff_access"] = "false"
-    pring(request_data)
+    print(request_data)
     resp = requests.post(url=CLASS_SCHEDULE_URL, data=request_data)
     with open(
         os.path.join(
@@ -69,7 +69,7 @@ try:
     request_data["p_type"] = "UE"
     request_data["academic_session"] = "Semester 2 Academic Year 2020-2021"
     request_data["bOption"] = "Next"
-    pring(request_data)
+    print(request_data)
     resp = requests.post(url=EXAM_SCHEDULE_URL, data=request_data)
     with open(
         os.path.join(timetable_dir, "exam", current_timestamp + "_exam_timetable.html"),
